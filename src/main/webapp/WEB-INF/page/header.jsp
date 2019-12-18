@@ -11,6 +11,9 @@
   <body>
     <div class="side">
         <div class="overlay">
+
+
+
         </div>
         <header class="content">
             <a href="${pageContext.request.contextPath }/user/avatar">
@@ -44,46 +47,46 @@
             </hgroup>
             <!-- Split button -->
             <div class="btn-group help-block list-div">
-                <button type="button" id="dLabel1" class="btn btn-info dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    个人管理
-                    <span class="caret"></span>
-                </button>
-                <ul class="dropdown-menu" aria-labelledby="dLabel1">
+<%--                <button type="button" id="dLabel1" class="btn btn-info dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">--%>
+<%--                    个人管理--%>
+<%--                    <span class="caret"></span>--%>
+<%--                </button>--%>
+<%--                <ul class="dropdown-menu" aria-labelledby="dLabel1">--%>
 	            <shiro:hasAnyRoles name="学生,教师">
                     <li><a href="${pageContext.request.contextPath }/user/ui-info">个人信息</a></li>
 	            </shiro:hasAnyRoles>
 	            <shiro:authenticated>
 	                <li><a href="${pageContext.request.contextPath }/user/ui-passwd">修改密码</a></li>
 	            </shiro:authenticated>
-		        <li role="separator" class="divider"></li>
-	            <li><a href="${pageContext.request.contextPath }/logout">退出登录</a></li>
-                </ul>
+<%--		        <li role="separator" class="divider"></li>--%>
+<%--	            <li><a href="${pageContext.request.contextPath }/logout">退出登录</a></li>--%>
+<%--                </ul>--%>
             </div>
             <shiro:hasAnyRoles name="学生,教师">
             <div class="btn-group help-block list-div">
-                <button type="button" id="dLabel1" class="btn btn-info dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    作业管理
-                    <span class="caret"></span>
-                </button>
-                <ul class="dropdown-menu" aria-labelledby="dLabel1">
+<%--                <button type="button" id="dLabel1" class="btn btn-info dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">--%>
+<%--                    实验管理--%>
+<%--                    <span class="caret"></span>--%>
+<%--                </button>--%>
+<%--                <ul class="dropdown-menu" aria-labelledby="dLabel1">--%>
                     <shiro:hasRole name="学生">
-                    <li><a href="${pageContext.request.contextPath }/work/ui-unends">未完作业</a></li>
-                    <li><a href="${pageContext.request.contextPath }/work/ui-overs">已完作业</a></li>
+                    <li><a href="${pageContext.request.contextPath }/work/ui-unends">未完实验</a></li>
+                    <li><a href="${pageContext.request.contextPath }/work/ui-overs">已完实验</a></li>
                     </shiro:hasRole>
                     <shiro:hasRole name="教师">
-                      <li><a href="${pageContext.request.contextPath }/work/ui-publish">发布作业</a></li>
-		              <li><a href="${pageContext.request.contextPath }/work/ui-recoders">作业管理</a></li>
+                      <li><a href="${pageContext.request.contextPath }/work/ui-publish">发布实验</a></li>
+		              <li><a href="${pageContext.request.contextPath }/work/ui-recoders">实验管理</a></li>
 		            </shiro:hasRole>
-                </ul>
+<%--                </ul>--%>
             </div>
             </shiro:hasAnyRoles>
             <shiro:hasRole name="超级管理员">
             <div class="btn-group help-block list-div">
-                <button type="button" id="dLabel1" class="btn btn-info dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    高级管理
-                    <span class="caret"></span>
-                </button>
-                <ul class="dropdown-menu" aria-labelledby="dLabel1">
+<%--                <button type="button" id="dLabel1" class="btn btn-info dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">--%>
+<%--                    高级管理--%>
+<%--                    <span class="caret"></span>--%>
+<%--                </button>--%>
+<%--                <ul class="dropdown-menu" aria-labelledby="dLabel1">--%>
                     <li><a href="${pageContext.request.contextPath }/admin/ui-student">学生管理</a></li>
                     <li><a href="${pageContext.request.contextPath }/admin/ui-teacher">教师管理</a></li>
                     <li role="separator" class="divider"></li>
@@ -95,7 +98,13 @@
                     <li role="separator" class="divider"></li>
                     <li><a href="${pageContext.request.contextPath }/admin/ui-role">角色管理</a></li>
                      <li><a href="${pageContext.request.contextPath }/admin/ui-permission">权限管理</a></li>
-                </ul>
+<%--                </ul>--%>
+            </div>
+            <div class="btn-group help-block list-div">
+
+                <li role="separator" class="divider"></li>
+                <li><a href="${pageContext.request.contextPath }/logout" class="text-danger right">退出登录</a></li>
+
             </div>
             </shiro:hasRole>
         </header>
