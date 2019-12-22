@@ -1,10 +1,7 @@
 package com.submit.web.controller;
 
 import com.submit.dto.PageResultDTO;
-import com.submit.entity.TLogin;
-import com.submit.entity.TStudent;
-import com.submit.entity.TTeacher;
-import com.submit.entity.TWork;
+import com.submit.entity.*;
 import com.submit.service.IWorkService;
 import com.submit.service.admin.ILoginService;
 import com.submit.service.admin.IStudentService;
@@ -103,7 +100,7 @@ public class UserController extends BaseController {
 		}
 		TLogin login = SessionManagerUtil.getPreviouSessionUser();
 		Integer tid = login.getUserId();
-		if (tid <= 9999) {
+		if (tid <= 9999 && tid != 1000) {
 			List<TWork> works = service.getListByConditional(pageNo, pageSize, status, tid, null);
 			int count = service.countByConditional(status, tid , null);
 			resultMap.put("works", works);
@@ -111,7 +108,15 @@ public class UserController extends BaseController {
 			resultMap.put("pageNo", pageNo);
 			return new PageResultDTO(pageNo, count, resultMap).getModelAndView("/index");
 		}
-		else{
+		else if (tid == 1000){
+			List<TWork> works = service.getListByConditional(pageNo, pageSize, status, tid, null);
+			int count = service.countByConditional(status, tid , null);
+			resultMap.put("works", works);
+			resultMap.put("status", status);
+			resultMap.put("pageNo", pageNo);
+			return new PageResultDTO(pageNo, count, resultMap).getModelAndView("/index");
+		}
+		else {
 			List<TWork> works = service.getListByConditional(pageNo, pageSize, status, null, tid);
 			int count = service.countByConditional(status, null,tid);
 			resultMap.put("works", works);

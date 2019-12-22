@@ -1,6 +1,7 @@
 package com.submit.service;
 
 import com.submit.entity.THomework;
+import com.submit.entity.TLession;
 import com.submit.entity.TWork;
 
 import java.util.List;
@@ -114,5 +115,5 @@ public interface IWorkService {
 	 * @return
 	 */
 	THomework getHomeworkById(String homeworkId);
-
+	
 }

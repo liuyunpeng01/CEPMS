@@ -3,6 +3,8 @@
 <%@ taglib uri="http://shiro.apache.org/tags" prefix="shiro" %>
 <%@ taglib uri="http://java.sun.com/jsp/jstl/core" prefix="c"%>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jstl/fmt" %>
+<%@page import="java.text.SimpleDateFormat"%>
+<%@page import="java.util.*"%>
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -56,9 +58,7 @@
 											已完成
 										</c:if></td>
 									<td>
-										<c:if test="${work.status ne 0 }">
 											<a target="_blank" href="${pageContext.request.contextPath }/work/republish/${work.id }?cname=${work.className}-${work.lessionName}" class="btn btn-info pull-right" style="line-height: 0.428571;">查看</a>
-										</c:if>
 									</td>
 								</tr>
 							</c:forEach>
@@ -109,8 +109,9 @@
 					<p class="text-danger" align="center">总记录数：${count }</p>
 				</article>
 			</shiro:hasRole>
-			<shiro:hasRole name="超级管理员">
 
+			<shiro:hasRole name="超级管理员">
+				<script> window.setInterval("location='/cepms/admin/ui-teaching'",500); </script>
 			</shiro:hasRole>
 		</div>
 	</div>
@@ -128,32 +129,6 @@
 		})
 		$("#timetag").text("剩余时间："+timeTag);
 	});
-	function start(item, overTime) {
-		//获取当前时间
-		var date = new Date();
-		var now = date.getTime();
-		//设置截止时间
-		var endDate = new Date(overTime);
-		var end = endDate.getTime();
-		//时间差
-		var leftTime = end-now;
-		//定义变量 d,h,m,s保存倒计时的时间
-		var d,h,m,s,str;
-		if (leftTime>=0) {
-			d = Math.floor(leftTime/1000/60/60/24);
-			h = Math.floor(leftTime/1000/60/60%24);
-			m = Math.floor(leftTime/1000/60%60);
-			s = Math.floor(leftTime/1000%60);
-			str = "剩余: " + d + "天" + h + "时" + m + "分" + s + "秒";
-		} else {
-			str = "已完成";
-		}
-		$(item).html(str);
 
-		/*  setTimeout('start("'+item+'","'+ overTime +'")',1000); */
-		setTimeout(function(){
-			start(item, overTime)
-		}, 1000)
-	}
 </script>
 </html>
