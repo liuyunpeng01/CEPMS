@@ -1,8 +1,11 @@
 package com.submit.web.controller;
 
+import com.submit.dto.PageResultDTO;
 import com.submit.entity.TLogin;
 import com.submit.entity.TStudent;
 import com.submit.entity.TTeacher;
+import com.submit.entity.TWork;
+import com.submit.service.IWorkService;
 import com.submit.service.admin.ILoginService;
 import com.submit.service.admin.IStudentService;
 import com.submit.service.admin.ITeacherService;
@@ -37,6 +40,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -54,7 +58,9 @@ public class UserController extends BaseController {
 	private ITeacherService teacherService;
 	@Autowired
 	private ILoginService loginService;
-	
+	@Autowired
+	IWorkService service;
+
 	/**
 	 * 	前往login页面
 	 * @return
@@ -79,36 +85,61 @@ public class UserController extends BaseController {
 	public String noPageUI() {
 		return URL_404;
 	}
-	
+
 	/**
 	 * 	前往首页面
 	 * @return
 	 */
+//	@RequiresUser
+//	@RequestMapping(value="/index", method=RequestMethod.GET)
+//	public String indexUI() {
+//		return "index";
+//	}
 	@RequiresUser
 	@RequestMapping(value="/index", method=RequestMethod.GET)
-	public String indexUI() {
-		return "index";
+	public ModelAndView indexUI(@RequestParam(value="pageNo", defaultValue="0") int pageNo, @RequestParam(value="status", defaultValue="0") int status) {
+		if (pageNo < 0) {
+			pageNo = 0;
+		}
+		TLogin login = SessionManagerUtil.getPreviouSessionUser();
+		Integer tid = login.getUserId();
+		if (tid <= 9999) {
+			List<TWork> works = service.getListByConditional(pageNo, pageSize, status, tid, null);
+			int count = service.countByConditional(status, tid , null);
+			resultMap.put("works", works);
+			resultMap.put("status", status);
+			resultMap.put("pageNo", pageNo);
+			return new PageResultDTO(pageNo, count, resultMap).getModelAndView("/index");
+		}
+		else{
+			List<TWork> works = service.getListByConditional(pageNo, pageSize, status, null, tid);
+			int count = service.countByConditional(status, null,tid);
+			resultMap.put("works", works);
+			resultMap.put("status", status);
+			resultMap.put("pageNo", pageNo);
+			return new PageResultDTO(pageNo, count, resultMap).getModelAndView("/index");
+		}
 	}
-	 
-	 /**
-	  * 前往忘记密码页面
-	  * @return
-	  */
-	 @RequestMapping(value="/forget", method=RequestMethod.GET)
-	 public String forgetUI() {
-		 return "open/forget";
-	 }
-	 
-	 /**
-	  * 	登录失败处理返回信息，登录操作由shiro操作，若成功将自动前往上一个页面
-	  * @param request
-	  * @return
-	  * @throws UserException 
-	  * @throws Exception 
-	  */
-	 @RequestMapping(value="/login", method=RequestMethod.POST)
-	 @ResponseBody
-	 public Map<String, Object> login(HttpServletRequest request) throws UserException, Exception {
+
+	/**
+	 * 前往忘记密码页面
+	 * @return
+	 */
+	@RequestMapping(value="/forget", method=RequestMethod.GET)
+	public String forgetUI() {
+		return "open/forget";
+	}
+
+	/**
+	 * 	登录失败处理返回信息，登录操作由shiro操作，若成功将自动前往上一个页面
+	 * @param request
+	 * @return
+	 * @throws UserException
+	 * @throws Exception
+	 */
+	@RequestMapping(value="/login", method=RequestMethod.POST)
+	@ResponseBody
+	public Map<String, Object> login(HttpServletRequest request) throws UserException, Exception {
 		//如果登陆失败从request中获取认证异常信息，shiroLoginFailure就是shiro异常类的全限定名
 		String exceptionClassName = (String) request.getAttribute("shiroLoginFailure");
 		//根据shiro返回的异常类路径判断
@@ -129,192 +160,192 @@ public class UserController extends BaseController {
 			resultMap.put(resultKey, ResultValue.SUCCESS);
 		}
 		return resultMap;
-	 }
-	 
-	 /**
-	  * 	校验用户的email是否已经被注册
-	  * @param email
-	  * @param isStudent
-	  * @return valid为true表示可以被注册
-	  */
-	 @RequiresAuthentication
-	 @RequestMapping(value="/api-email-able", method=RequestMethod.GET)
-	 @ResponseBody
-	 public Map<String, Object> apiEmailIsExist(@RequestParam("email") String email, @RequestParam("flag") boolean isStudent) {
-		 boolean exist = false;
-		 if (isStudent == Boolean.TRUE) {
-			 exist = studentService.validEmailExist(email);
-		 } else {
-			 exist = teacherService.validEmailExist(email);
-		 }
-		 resultMap.put("valid", !exist);
-		 return resultMap;
-	 }
-	 
-	 /**
-	  * 	忘记密码,重设新的默认密码
-	  * @param vaild
-	  * @return
-	  */
-	 @RequestMapping(value="/newpass", method=RequestMethod.PUT)
-	 @ResponseBody
-	 public Map<String, Object> resetNewDefaultPassword(HttpServletRequest request, @RequestParam("userId") Integer userId, @RequestParam("vaild") String vaild,
-			 @RequestParam("email") String email) {
-		 String key = (String) request.getSession().getAttribute(MailUtil.EMAIL_KEY);
-		 try {
-			 if (key == null) {
-				 throw new Exception("验证码过期");
-			 }
-			 if (vaild == null || vaild.trim().equals("") || !vaild.equals(key)) {
-				 throw new Exception("验证码错误");
-			 }
-			 // 验证码正确
-			 TLogin login = loginService.getByUserId(userId);
-			 if (login == null) {
-				 throw new Exception("用户不存在");
-			 }
-			 // 校验邮箱与用户邮箱是否匹配
-			 if (userId > 9999) {
-				 TStudent student = studentService.getById(userId);
-				 if (StringUtils.isEmpty(student.getEmail())) {
-					 throw new Exception("用户未设置邮箱，请联系管理员");
-				 }
-				 if (!student.getEmail().equals(StringUtils.trim(email))) {
-					 throw new Exception("用户邮箱与输入的邮箱不匹配");
-				 }
-			 } else {
-				 TTeacher teacher = teacherService.getById(userId);
-				 if (StringUtils.isEmpty(teacher.getEmail())) {
-					 throw new Exception("用户未设置邮箱，请联系管理员");
-				 }
-				 if (!teacher.getEmail().equals(StringUtils.trim(email))) {
-					 throw new Exception("用户邮箱与输入的邮箱不匹配");
-				 }
-			 }
-			 // 更新密码
-			 TLogin newLogin = new TLogin();
-			 newLogin.setId(login.getId());
-			 String newPassword = Utils.getUUID();
-			 newPassword = newPassword.substring(0, 24);
-			 newLogin.setPassword(MD5Util.md5Salt(newPassword));
-			 loginService.update(newLogin);
-			 
-			 // 更新用户修改时间
-			 if (userId > 9999) {
-				 TStudent student = new TStudent();
-				 student.setId(userId);
-				// 学生
-				 studentService.update(student );
-			 } else {
-				 TTeacher teacher = new TTeacher();
-				 teacher.setId(userId);
-				 teacherService.update(teacher);
-			 }
-			 resultMap.put(resultKey, ResultValue.SUCCESS);
-			 resultMap.put("msg", newPassword);
-			 request.getSession().removeAttribute(MailUtil.EMAIL_KEY);
-		 } catch (Exception e) {
-			 resultMap.put(resultKey, ResultValue.FAIL);
-			 resultMap.put("msg", e.getMessage());
-		 }
-		 return resultMap;
-	 }
+	}
 
-	 /**
-	  * 用户个人信息页面
-	  * @param request
-	  * @return
-	  */
-	 @RequiresPermissions("user:ui")
-	 @RequestMapping(value="/user/ui-info", method=RequestMethod.GET)
-	 public ModelAndView infoUI(HttpServletRequest request) {
-		 TLogin login = (TLogin) request.getSession().getAttribute("user");
-		 return new ModelAndView("account/info", "login", login);
-	 }
-	 
-	 /**
-	  * 	更新用户
-	  * @param login
-	  * @return
-	  */
-	 @RequestMapping(value="/user/info", method=RequestMethod.PUT)
-	 @RequiresPermissions("user:update:info")
-	 @ResponseBody
-	 public Map<String, Object> userUpdate(HttpServletRequest request, @RequestParam(value="sex", required=false) Boolean sex, 
-			 @RequestParam(value="phone", required=false) String phone, @RequestParam(value="email", required=false) String email,
-			 @RequestParam(value="id", required=true) Integer id) {
-		 try {
-			 if(id > 9999) {
-				 TLogin login = (TLogin) request.getSession().getAttribute("user");
-				 TStudent s = login.getStudent();
-				 TStudent student = new TStudent();
-				 student.setId(id);
-				 if (sex != null && s.getSex() != sex) {
-					 student.setSex(sex);
-				 }
-				 if (phone != null && s.getPhone() != phone) {
-					 student.setPhone(phone.trim());
-				 }
-				 if (email != null && s.getEmail() != email) {
-					 student.setEmail(email.trim());
-				 }
-				 studentService.update(student);
-				 s = studentService.getById(student.getId());
-				 login.setStudent(s);
-			 } else {
-				 TLogin login = (TLogin) request.getSession().getAttribute("user");
-				 TTeacher t = login.getTeacher();
-				 TTeacher teacher = new TTeacher();
-				 teacher.setId(id);
-				 if (sex != null && t.getSex() != sex) {
-					 teacher.setSex(sex);
-				 }
-				 if (phone != null && t.getPhone() != phone) {
-					 teacher.setPhone(phone.trim());
-				 }
-				 if (phone != null && t.getEmail() != email) {
-					 teacher.setEmail(email.trim());
-				 }
-				 teacherService.update(teacher);
-				 t = teacherService.getById(teacher.getId());
-				 login.setTeacher(t);
-			 }
-			 resultMap.put(resultKey, ResultValue.SUCCESS);
-		 } catch (Exception e) {
-			 e.printStackTrace();
-			 resultMap.put(resultKey, ResultValue.FAIL);
+	/**
+	 * 	校验用户的email是否已经被注册
+	 * @param email
+	 * @param isStudent
+	 * @return valid为true表示可以被注册
+	 */
+	@RequiresAuthentication
+	@RequestMapping(value="/api-email-able", method=RequestMethod.GET)
+	@ResponseBody
+	public Map<String, Object> apiEmailIsExist(@RequestParam("email") String email, @RequestParam("flag") boolean isStudent) {
+		boolean exist = false;
+		if (isStudent == Boolean.TRUE) {
+			exist = studentService.validEmailExist(email);
+		} else {
+			exist = teacherService.validEmailExist(email);
 		}
-		 return resultMap;
-	 }
-	 
-	 /**
-	  * 用户修改密码页面
-	  * @param request
-	  * @return
-	  */
-	 @RequiresPermissions("user:ui")
-	 @RequestMapping(value="/user/ui-passwd", method=RequestMethod.GET)
-	 public String repasswdUI() {
-		 return "account/passwd";
-	 }
-	 
-	 /**
-	  * 	修改用户的密码
-	  * @param request
-	  * @param oldPasswd
-	  * @param newPasswd
-	  * @return
-	  */
-	 @RequiresPermissions("user:update:passwd")
-	 @RequestMapping(value="/user/passwd",method=RequestMethod.PUT)
-	 @ResponseBody
-	 public Map<String, Object> userUpdatePassword(HttpServletRequest request, @RequestParam("oldPasswd") String oldPasswd,
-			 @RequestParam("newPasswd") String newPasswd) {
+		resultMap.put("valid", !exist);
+		return resultMap;
+	}
+
+	/**
+	 * 	忘记密码,重设新的默认密码
+	 * @param vaild
+	 * @return
+	 */
+	@RequestMapping(value="/newpass", method=RequestMethod.PUT)
+	@ResponseBody
+	public Map<String, Object> resetNewDefaultPassword(HttpServletRequest request, @RequestParam("userId") Integer userId, @RequestParam("vaild") String vaild,
+													   @RequestParam("email") String email) {
+		String key = (String) request.getSession().getAttribute(MailUtil.EMAIL_KEY);
+		try {
+			if (key == null) {
+				throw new Exception("验证码过期");
+			}
+			if (vaild == null || vaild.trim().equals("") || !vaild.equals(key)) {
+				throw new Exception("验证码错误");
+			}
+			// 验证码正确
+			TLogin login = loginService.getByUserId(userId);
+			if (login == null) {
+				throw new Exception("用户不存在");
+			}
+			// 校验邮箱与用户邮箱是否匹配
+			if (userId > 9999) {
+				TStudent student = studentService.getById(userId);
+				if (StringUtils.isEmpty(student.getEmail())) {
+					throw new Exception("用户未设置邮箱，请联系管理员");
+				}
+				if (!student.getEmail().equals(StringUtils.trim(email))) {
+					throw new Exception("用户邮箱与输入的邮箱不匹配");
+				}
+			} else {
+				TTeacher teacher = teacherService.getById(userId);
+				if (StringUtils.isEmpty(teacher.getEmail())) {
+					throw new Exception("用户未设置邮箱，请联系管理员");
+				}
+				if (!teacher.getEmail().equals(StringUtils.trim(email))) {
+					throw new Exception("用户邮箱与输入的邮箱不匹配");
+				}
+			}
+			// 更新密码
+			TLogin newLogin = new TLogin();
+			newLogin.setId(login.getId());
+			String newPassword = Utils.getUUID();
+			newPassword = newPassword.substring(0, 24);
+			newLogin.setPassword(MD5Util.md5Salt(newPassword));
+			loginService.update(newLogin);
+
+			// 更新用户修改时间
+			if (userId > 9999) {
+				TStudent student = new TStudent();
+				student.setId(userId);
+				// 学生
+				studentService.update(student );
+			} else {
+				TTeacher teacher = new TTeacher();
+				teacher.setId(userId);
+				teacherService.update(teacher);
+			}
+			resultMap.put(resultKey, ResultValue.SUCCESS);
+			resultMap.put("msg", newPassword);
+			request.getSession().removeAttribute(MailUtil.EMAIL_KEY);
+		} catch (Exception e) {
+			resultMap.put(resultKey, ResultValue.FAIL);
+			resultMap.put("msg", e.getMessage());
+		}
+		return resultMap;
+	}
+
+	/**
+	 * 用户个人信息页面
+	 * @param request
+	 * @return
+	 */
+	@RequiresPermissions("user:ui")
+	@RequestMapping(value="/user/ui-info", method=RequestMethod.GET)
+	public ModelAndView infoUI(HttpServletRequest request) {
+		TLogin login = (TLogin) request.getSession().getAttribute("user");
+		return new ModelAndView("account/info", "login", login);
+	}
+
+	/**
+	 * 	更新用户
+	 * @param login
+	 * @return
+	 */
+	@RequestMapping(value="/user/info", method=RequestMethod.PUT)
+	@RequiresPermissions("user:update:info")
+	@ResponseBody
+	public Map<String, Object> userUpdate(HttpServletRequest request, @RequestParam(value="sex", required=false) Boolean sex,
+										  @RequestParam(value="phone", required=false) String phone, @RequestParam(value="email", required=false) String email,
+										  @RequestParam(value="id", required=true) Integer id) {
+		try {
+			if(id > 9999) {
+				TLogin login = (TLogin) request.getSession().getAttribute("user");
+				TStudent s = login.getStudent();
+				TStudent student = new TStudent();
+				student.setId(id);
+				if (sex != null && s.getSex() != sex) {
+					student.setSex(sex);
+				}
+				if (phone != null && s.getPhone() != phone) {
+					student.setPhone(phone.trim());
+				}
+				if (email != null && s.getEmail() != email) {
+					student.setEmail(email.trim());
+				}
+				studentService.update(student);
+				s = studentService.getById(student.getId());
+				login.setStudent(s);
+			} else {
+				TLogin login = (TLogin) request.getSession().getAttribute("user");
+				TTeacher t = login.getTeacher();
+				TTeacher teacher = new TTeacher();
+				teacher.setId(id);
+				if (sex != null && t.getSex() != sex) {
+					teacher.setSex(sex);
+				}
+				if (phone != null && t.getPhone() != phone) {
+					teacher.setPhone(phone.trim());
+				}
+				if (email != null && t.getEmail() != email) {
+					teacher.setEmail(email.trim());
+				}
+				teacherService.update(teacher);
+				t = teacherService.getById(teacher.getId());
+				login.setTeacher(t);
+			}
+			resultMap.put(resultKey, ResultValue.SUCCESS);
+		} catch (Exception e) {
+			e.printStackTrace();
+			resultMap.put(resultKey, ResultValue.FAIL);
+		}
+		return resultMap;
+	}
+
+	/**
+	 * 用户修改密码页面
+	 * @param request
+	 * @return
+	 */
+	@RequiresPermissions("user:ui")
+	@RequestMapping(value="/user/ui-passwd", method=RequestMethod.GET)
+	public String repasswdUI() {
+		return "account/passwd";
+	}
+
+	/**
+	 * 	修改用户的密码
+	 * @param request
+	 * @param oldPasswd
+	 * @param newPasswd
+	 * @return
+	 */
+	@RequiresPermissions("user:update:passwd")
+	@RequestMapping(value="/user/passwd",method=RequestMethod.PUT)
+	@ResponseBody
+	public Map<String, Object> userUpdatePassword(HttpServletRequest request, @RequestParam("oldPasswd") String oldPasswd,
+												  @RequestParam("newPasswd") String newPasswd) {
 		try {
 			TLogin login = (TLogin) request.getSession().getAttribute("user");
 			if (oldPasswd == null || newPasswd == null || oldPasswd.equals("") || newPasswd.equals("")) {
-				 resultMap.put(resultKey, ResultValue.FAIL);
-				 return resultMap;
+				resultMap.put(resultKey, ResultValue.FAIL);
+				return resultMap;
 			}
 			if (login.getPassword().equals(MD5Util.md5Salt(oldPasswd))) {
 				TLogin tLogin = new TLogin();
@@ -326,34 +357,34 @@ public class UserController extends BaseController {
 			} else {
 				resultMap.put(resultKey, ResultValue.FAIL);
 			}
-		 } catch (Exception e) {
-			 e.printStackTrace();
-			 resultMap.put(resultKey, ResultValue.FAIL);
+		} catch (Exception e) {
+			e.printStackTrace();
+			resultMap.put(resultKey, ResultValue.FAIL);
 		}
 		// 重新登录
 		Subject subject = SecurityUtils.getSubject();
 		SecurityUtils.getSecurityManager().logout(subject );
 		return resultMap;
-	 }
-	 
-	 /**
-	  * 	修改头像页面
-	  * @return
-	  */
-	 @RequiresAuthentication
-	 @RequestMapping(value="user/avatar", method=RequestMethod.GET)
-	 public String userAvatarUI() {
-		 return "account/avatar";
-	 }
-	 
-	 /**
-	  * 	修改头像
-	  * @return
-	  */
-	 @RequiresAuthentication
-	 @RequestMapping(value="user/avatar", method=RequestMethod.POST)
-	 @ResponseBody
-	 public Map<String, Object> userAvatar(@RequestParam("base64") String base64) {
+	}
+
+	/**
+	 * 	修改头像页面
+	 * @return
+	 */
+	@RequiresAuthentication
+	@RequestMapping(value="user/avatar", method=RequestMethod.GET)
+	public String userAvatarUI() {
+		return "account/avatar";
+	}
+
+	/**
+	 * 	修改头像
+	 * @return
+	 */
+	@RequiresAuthentication
+	@RequestMapping(value="user/avatar", method=RequestMethod.POST)
+	@ResponseBody
+	public Map<String, Object> userAvatar(@RequestParam("base64") String base64) {
 		String dataPrix = "";
 		String data = "";
 		String path = "";
@@ -384,7 +415,7 @@ public class UserController extends BaseController {
 			// 因为BASE64Decoder的jar问题，此处使用spring框架提供的工具包
 			byte[] bs = Base64Utils.decodeFromString(data);
 			FileUtils.writeByteArrayToFile(new File(rootDirectory + path), bs);
-			
+
 			if (SessionManagerUtil.getUserRoleName().equals(Utils.RoleName.STUDENT.toString())) {
 				TStudent s =  new TStudent();
 				s.setId(login.getUserId());
@@ -417,7 +448,7 @@ public class UserController extends BaseController {
 			}
 			resultMap.put(resultKey, ResultValue.FAIL);
 			resultMap.put("msg", e.getMessage());
-		}		
+		}
 		return resultMap;
-	 }
+	}
 }
