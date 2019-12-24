@@ -120,15 +120,4 @@
 <script src="${pageContext.request.contextPath}/bwx/js/jquery-3.3.1.min.js" type="text/javascript" charset="utf-8"></script>
 <script src="${pageContext.request.contextPath}/bootstrap/js/bootstrap.min.js" type="text/javascript" charset="utf-8"></script>
 <script src="${pageContext.request.contextPath}/layer/layer.js" type="text/javascript" charset="utf-8"></script>
-<script type="text/javascript">
-	$(document).ready(function(){
-		var timeTag = $("span.downTime");
-		$.each(timeTag, function(index, item) {
-			var overTime = $(item).attr("data-time");
-			start(item, overTime);
-		})
-		$("#timetag").text("剩余时间："+timeTag);
-	});
-
-</script>
 </html>
